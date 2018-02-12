@@ -1,6 +1,5 @@
 package stetsenko.currencies.presenter
 
-import io.reactivex.disposables.CompositeDisposable
 import stetsenko.currencies.view.View
 
 abstract class BasePresenter<in V: View>: Presenter<V> {
@@ -8,8 +7,6 @@ abstract class BasePresenter<in V: View>: Presenter<V> {
     protected var view: View? = null
 
     abstract fun onBindView(view: V)
-
-    protected var compositeDisposable = CompositeDisposable()
 
     override fun onBind(view: V) {
         this.view = view
@@ -24,6 +21,6 @@ abstract class BasePresenter<in V: View>: Presenter<V> {
     }
 
     override fun onFinish() {
-        compositeDisposable.clear()
+        // release resources if needed
     }
 }
