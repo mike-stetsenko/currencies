@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Курсы валют</string>
+    <string name="unknown_currency">Неизвестная валюта</string>
 </resources>

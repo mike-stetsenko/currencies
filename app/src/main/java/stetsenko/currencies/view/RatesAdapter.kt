@@ -5,6 +5,7 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import stetsenko.currencies.R
 import stetsenko.currencies.presenter.Rate
@@ -26,6 +27,7 @@ class RatesAdapter : RecyclerView.Adapter<RatesAdapter.RatesViewHolder>() {
             abbr.text = rate.abbreviation
             descr.text = rate.description
             currencyValue.text = rate.value
+            currencyIcon.setImageResource(rate.icon)
         }
     }
 
@@ -33,6 +35,7 @@ class RatesAdapter : RecyclerView.Adapter<RatesAdapter.RatesViewHolder>() {
         var abbr: TextView = itemView.findViewById(R.id.abbreviation)
         var descr: TextView = itemView.findViewById(R.id.description)
         var currencyValue: TextView = itemView.findViewById(R.id.currencyValue)
+        var currencyIcon: ImageView = itemView.findViewById(R.id.currencyIcon)
     }
 
     fun update(rates: List<Rate>) {
@@ -42,6 +45,8 @@ class RatesAdapter : RecyclerView.Adapter<RatesAdapter.RatesViewHolder>() {
         this.rates = rates
 
         diffResult.dispatchUpdatesTo(this)
+
+        notifyDataSetChanged()
     }
 
     private class RateDiffCallback(val old: List<Rate>, val new: List<Rate>) : DiffUtil.Callback() {
