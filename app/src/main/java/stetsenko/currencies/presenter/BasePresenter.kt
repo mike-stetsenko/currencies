@@ -2,9 +2,9 @@ package stetsenko.currencies.presenter
 
 import stetsenko.currencies.view.View
 
-abstract class BasePresenter<in V: View>: Presenter<V> {
+abstract class BasePresenter< V: View>: Presenter<V> {
 
-    protected var view: View? = null
+    protected var view: V? = null
 
     abstract fun onBindView(view: V)
 

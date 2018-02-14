@@ -1,3 +1,8 @@
 package stetsenko.currencies.presenter
 
-data class Rate(val abbreviation: String, val description: String, val value: String, val icon: Int)
+import java.math.BigDecimal
+
+data class Rate(val code: String,
+                val description: String,
+                var value: BigDecimal,
+                val icon: Int)

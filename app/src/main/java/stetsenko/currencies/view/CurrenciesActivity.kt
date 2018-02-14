@@ -1,8 +1,12 @@
 package stetsenko.currencies.view
 
+import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import stetsenko.currencies.R
 import stetsenko.currencies.presenter.CurrencyPresenter
 import stetsenko.currencies.presenter.Rate
@@ -20,6 +24,7 @@ class CurrenciesActivity : PresenterActivity<CurrencyPresenter, CurrenciesView>(
 
     private val ratesAdapter = RatesAdapter().also { it.setCallback(this) }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         appComponent.inject(this)
 
@@ -29,6 +34,7 @@ class CurrenciesActivity : PresenterActivity<CurrencyPresenter, CurrenciesView>(
         rates = findViewById(R.id.rates)
         rates.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         rates.adapter = ratesAdapter
+        // TODO close focus on random place click
     }
 
     override fun updateRates(rates: List<Rate>) {
@@ -39,7 +45,22 @@ class CurrenciesActivity : PresenterActivity<CurrencyPresenter, CurrenciesView>(
         presenter.onStartEdition(tag)
     }
 
+    override fun onNewValue(tag: String, value: String) {
+        presenter.onNewValue(tag, value)
+        rates.smoothScrollToPosition(0)
+    }
+
     override fun onStopEditing(tag: String, value: String) {
         presenter.onStopEdition(tag, value)
+    }
+
+    override fun onBackPressed() {
+        if (currentFocus is EditText) {
+            currentFocus.clearFocus() // TODO handle soft keyboard close properly
+            (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                .hideSoftInputFromWindow(currentFocus.windowToken, 0)
+        } else {
+            super.onBackPressed()
+        }
     }
 }
