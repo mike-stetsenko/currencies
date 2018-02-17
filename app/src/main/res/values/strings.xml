@@ -36,4 +36,5 @@
     <string name="unknown_currency">Unknown currency</string>
 
     <string name="wrong_input_error">Something went wrong! Are you sure %1$s is right number?</string>
+    <string name="no_network_warning">Can\'t get currencies data from\nrevolut.duckdns.org.\nPlease check network connection!</string>
 </resources>

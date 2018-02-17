@@ -2,4 +2,5 @@
     <string name="app_name">Курсы валют</string>
     <string name="unknown_currency">Неизвестная валюта</string>
     <string name="wrong_input_error">Что-то пошло не так! Вы уверены что  %1$s - это корректное значение валюты?</string>
+    <string name="no_network_warning">Нет доступа к данным с \nrevolut.duckdns.org.\nПожалуйста, проверьте настройки сетевого подключения!</string>
 </resources>
