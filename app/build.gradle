@@ -34,6 +34,9 @@ def rxAndroidVersion = "2.0.1"
 def rxBinding = "2.0.0"
 def rxRetrofitAdapter = "2.3.0"
 
+def espressoVersion = "3.0.0"
+def androidSupportTestVersion = "1.0.1"
+
 dependencies {
 
     implementation"org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
@@ -60,6 +63,16 @@ dependencies {
     implementation "com.jakewharton.rxbinding2:rxbinding-support-v4-kotlin:$rxBinding"
 
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+    kaptAndroidTest "com.google.dagger:dagger-compiler:$daggerVersion"
+    androidTestImplementation "com.android.support.test:runner:$androidSupportTestVersion"
+    androidTestImplementation "com.android.support.test:rules:$androidSupportTestVersion"
+    androidTestImplementation("com.android.support.test.espresso:espresso-core:$espressoVersion", {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    androidTestImplementation "com.android.support.test.espresso:espresso-intents:$espressoVersion"
+    androidTestImplementation("com.android.support.test.espresso:espresso-contrib:$espressoVersion") {
+        exclude group: 'com.android.support', module: 'appcompat'
+        exclude group: 'com.android.support', module: 'support-v4'
+        exclude module: 'recyclerview-v7'
+    }
 }
