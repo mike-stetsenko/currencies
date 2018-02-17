@@ -55,7 +55,7 @@
         android:inputType="numberDecimal"
         android:imeOptions="actionDone"
         tools:text="123456.78"
-        android:maxLength="9"
+        android:maxLength="@integer/input_max_length"
         app:layout_constraintBottom_toBottomOf="@+id/currencyIcon"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"

@@ -20,6 +20,7 @@ class RatesAdapter : RecyclerView.Adapter<RatesAdapter.RatesViewHolder>() {
 
     companion object {
         private const val POSTFIX = "..."
+        private const val ZERO_STRING = "0"
     }
 
     interface Callback {
@@ -58,18 +59,23 @@ class RatesAdapter : RecyclerView.Adapter<RatesAdapter.RatesViewHolder>() {
         with(holder) {
             abbr.text = rate.code
             descr.text = rate.description
+            currencyIcon.setImageResource(rate.icon)
+
             val sum = rate.value.toPlainString()
             // --> during currency conversion, one value can by much longer than another
             //     lets show them as ellipsized by "end" manually - this property
             //     not compatible with inputType <--
-            val sumToShow = if (sum.length > 9) sum.substring(0, 5) + POSTFIX else sum
+            val maxLength = holder.currencyValue.resources.getInteger(R.integer.input_max_length)
+            val sumToShow =
+                if (sum.length > maxLength)
+                    sum.substring(0, maxLength - POSTFIX.length - 1) + POSTFIX
+                else sum
             currencyValue.setText(sumToShow)
-            currencyIcon.setImageResource(rate.icon)
 
             val textChangedWatcher = getOnChangeWatcher {
                 if (holder.currencyValue.hasFocus()) {
                     val newVal = currencyValue.text.toString()
-                    clbk?.onNewValue(rate.code, if (newVal.isBlank()) "0" else newVal)
+                    clbk?.onNewValue(rate.code, if (newVal.isBlank()) ZERO_STRING else newVal)
                 }
             }
 
