@@ -50,6 +50,7 @@ class CurrencyPropertyProvider(val context: Context) {
                 "SGD" -> R.string.long_sgd
                 "THB" -> R.string.long_thb
                 "ZAR" -> R.string.long_zar
+                "ISK" -> R.string.long_isk
                 else -> R.string.unknown_currency
             }
             context.getString(id)
@@ -90,6 +91,7 @@ class CurrencyPropertyProvider(val context: Context) {
             "SGD" -> R.drawable.flag_sgd
             "THB" -> R.drawable.flag_thb
             "ZAR" -> R.drawable.flag_zar
+            "ISK" -> R.drawable.flag_isk
             else -> R.drawable.ic_launcher_background
         }
     }

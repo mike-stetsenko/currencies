@@ -67,7 +67,7 @@ class CurrencyPresenter(private val context: Context,
     }
 
     override fun onBindView(view: CurrenciesView) {
-        if (ratesFromServer.isNotEmpty()){
+        if (ratesFromServer.isNotEmpty()) {
             view.updateRates(
                 getRatesToShow(ratesFromServer, currentCurrencyCode, currentCurrencyValue))
         }
