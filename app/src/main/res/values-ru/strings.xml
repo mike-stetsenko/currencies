@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Курсы валют</string>
     <string name="unknown_currency">Неизвестная валюта</string>
+    <string name="wrong_input_error">Что-то пошло не так! Вы уверены что  %1$s - это корректное значение валюты?</string>
 </resources>

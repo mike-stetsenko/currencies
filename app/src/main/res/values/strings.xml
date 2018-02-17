@@ -34,4 +34,6 @@
     <string name="long_thb">Thai baht</string>
     <string name="long_zar">South African rand</string>
     <string name="unknown_currency">Unknown currency</string>
+
+    <string name="wrong_input_error">Something went wrong! Are you sure %1$s is right number?</string>
 </resources>

@@ -18,13 +18,16 @@ import stetsenko.currencies.presenter.Rate
 
 class RatesAdapter : RecyclerView.Adapter<RatesAdapter.RatesViewHolder>() {
 
-    interface Callback {
-        fun onStartEdition(tag: String)
-        fun onNewValue(tag: String, value: String)
-        fun onStopEditing(tag: String, value: String)
+    companion object {
+        private const val POSTFIX = "..."
     }
 
-    var clbk: Callback? = null
+    interface Callback {
+        fun onStartEdition(tag: String, value: String)
+        fun onNewValue(tag: String, value: String)
+    }
+
+    private var clbk: Callback? = null
 
     private var rates: List<Rate> = emptyList()
 
@@ -39,25 +42,32 @@ class RatesAdapter : RecyclerView.Adapter<RatesAdapter.RatesViewHolder>() {
 
     override fun getItemCount(): Int = rates.count()
 
+    private fun getOnChangeWatcher(block: () -> Unit): TextWatcher = object : TextWatcher {
+
+        override fun afterTextChanged(p0: Editable?) {}
+
+        override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
+
+        override fun onTextChanged(p0: CharSequence?, start: Int, before: Int, count: Int) {
+            block()
+        }
+    }
+
     override fun onBindViewHolder(holder: RatesViewHolder, position: Int) {
         val rate = rates[position]
         with(holder) {
             abbr.text = rate.code
             descr.text = rate.description
-            currencyValue.setText(rate.value.toPlainString())
+            val sum = rate.value.toPlainString()
+            // --> during currency conversion, one value can by much longer than another
+            //     lets show them as ellipsized by "end" manually - this property
+            //     not compatible with inputType <--
+            val sumToShow = if (sum.length > 9) sum.substring(0, 5) + POSTFIX else sum
+            currencyValue.setText(sumToShow)
             currencyIcon.setImageResource(rate.icon)
 
-            val textChangedWatcher = object : TextWatcher {
-
-                override fun afterTextChanged(p0: Editable?) {
-                    // no need
-                }
-
-                override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                    // no need
-                }
-
-                override fun onTextChanged(p0: CharSequence?, start: Int, before: Int, count: Int) {
+            val textChangedWatcher = getOnChangeWatcher {
+                if (holder.currencyValue.hasFocus()) {
                     val newVal = currencyValue.text.toString()
                     clbk?.onNewValue(rate.code, if (newVal.isBlank()) "0" else newVal)
                 }
@@ -74,11 +84,12 @@ class RatesAdapter : RecyclerView.Adapter<RatesAdapter.RatesViewHolder>() {
             currencyValue.onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
                 clbk?.let {
                     if (hasFocus) {
-                        it.onStartEdition(rate.code)
+                        // --> manually rough removing ellipsizing from values <--
+                        val value = currencyValue.text.toString().replace(POSTFIX, "")
+                        it.onStartEdition(rate.code, value)
                         currencyValue.addTextChangedListener(textChangedWatcher)
                     } else {
                         currencyValue.removeTextChangedListener(textChangedWatcher)
-                        it.onStopEditing(rate.code, currencyValue.text.toString())
                     }
                 }
             }
@@ -94,9 +105,8 @@ class RatesAdapter : RecyclerView.Adapter<RatesAdapter.RatesViewHolder>() {
 
     fun update(rates: List<Rate>) {
 
-        if (this.rates.isNotEmpty() && rates.isNotEmpty() && this.rates[0].code == rates[0].code){
-            // prevent first row redraw in order not to lose edittext focus
-            // TODO get rid of this
+        if (this.rates.isNotEmpty() && rates.isNotEmpty() && this.rates[0].code == rates[0].code) {
+            // no need to redraw first row with base currency
             this.rates[0].value = rates[0].value
         }
 
@@ -104,10 +114,18 @@ class RatesAdapter : RecyclerView.Adapter<RatesAdapter.RatesViewHolder>() {
 
         this.rates = rates
 
-        diffResult.dispatchUpdatesTo(this)
+        try {
+            // TODO
+            // --> somehow, call notifyItemRangeChanged with DiffUtil leads to
+            //     incorrect ImageView redraw but notifyDataSetChanged() doesn't <--
+            diffResult.dispatchUpdatesTo(this)
+        } catch (e: IllegalStateException) {
+            // never mind, I'll redraw this on next step
+        }
     }
 
-    private class RateDiffCallback(val old: List<Rate>, val new: List<Rate>) : DiffUtil.Callback() {
+    private class RateDiffCallback(val old: List<Rate>, val new: List<Rate>) :
+        DiffUtil.Callback() {
 
         override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
             return old[oldItemPosition].code == new[newItemPosition].code

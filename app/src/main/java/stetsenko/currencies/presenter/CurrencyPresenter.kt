@@ -1,8 +1,6 @@
 package stetsenko.currencies.presenter
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.os.Build
 import android.widget.Toast
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposables
@@ -11,48 +9,70 @@ import stetsenko.currencies.R
 import stetsenko.currencies.model.Rates
 import stetsenko.currencies.model.RevolutApi
 import stetsenko.currencies.view.CurrenciesView
+import stetsenko.currencies.view.CurrencyPropertyProvider
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.util.*
 import java.util.concurrent.TimeUnit
 
-class CurrencyPresenter(private val context: Context, private val api: RevolutApi) :
+class CurrencyPresenter(private val context: Context,
+                        private val api: RevolutApi,
+                        private val currencyProps: CurrencyPropertyProvider) :
     BasePresenter<CurrenciesView>() {
 
     private var getRates = Disposables.disposed()
 
     private var currentCurrencyCode: String = "EUR"
+
     private var currentCurrencyValue: BigDecimal = BigDecimal.ONE
 
     private var ratesFromServer: List<Rate> = mutableListOf()
 
-    private val ratesToShow: List<Rate>
-        get() {
-            val initialValue = ratesFromServer.first { it.code == currentCurrencyCode }.value
-            val multiplier = when {
-                currentCurrencyValue == BigDecimal.ZERO -> BigDecimal.ZERO
-                else -> currentCurrencyValue.divide(initialValue, 2, RoundingMode.HALF_UP)
-            }
+    private val calledRated: HashMap<String, Long> = hashMapOf()
+    private var sortOrder = 0L
 
-            return ratesFromServer
-                .sortedBy { it.code != currentCurrencyCode }
-                .map {
-                    it.copy().apply {
-                        value = when {
-                            multiplier == BigDecimal.ZERO -> BigDecimal.ZERO
-                            it.code == currentCurrencyCode -> currentCurrencyValue
-                            else -> (value * multiplier)
-                                .setScale(2, BigDecimal.ROUND_HALF_UP).stripTrailingZeros()
-                        }
+    private fun getRatesToShow(serverRates: List<Rate>,
+                               rateCode: String,
+                               rateValue: BigDecimal): List<Rate> {
+
+        val initialValue = serverRates.first { it.code == rateCode }.value
+        val multiplier = when (rateValue) {
+            BigDecimal.ZERO -> BigDecimal.ZERO
+            else -> rateValue.divide(initialValue, 2, RoundingMode.HALF_UP)
+        }
+
+        return serverRates
+            .map {
+                it.copy().apply {
+                    value = when {
+                        multiplier == BigDecimal.ZERO -> BigDecimal.ZERO
+                        it.code == rateCode -> rateValue
+                        else -> (value * multiplier)
+                            .setScale(2, BigDecimal.ROUND_HALF_UP).stripTrailingZeros()
                     }
                 }
+            }
+            .sortedWith(ratesOrderComparator)
+    }
+
+    private val ratesOrderComparator = Comparator<Rate> { t1, t2 ->
+        val lastPressed1 = calledRated[t1.code]
+        val lastPressed2 = calledRated[t2.code]
+        when {
+            lastPressed1 == lastPressed2 -> 0
+            lastPressed1 == null -> 1
+            lastPressed2 == null -> -1
+            lastPressed1 > lastPressed2 -> -1
+            else -> 1
         }
+    }
 
     override fun onBindView(view: CurrenciesView) {
         startUpdating()
     }
 
     private fun startUpdating() {
+        if (!getRates.isDisposed) return
+
         getRates = api.getCurrencies()
             .subscribeOn(Schedulers.io())
             .repeatWhen { completed -> completed.delay(1, TimeUnit.SECONDS, Schedulers.io()) }
@@ -62,7 +82,7 @@ class CurrencyPresenter(private val context: Context, private val api: RevolutAp
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({ res ->
                 ratesFromServer = res
-                view?.updateRates(ratesToShow)
+                view?.updateRates(getRatesToShow(res, currentCurrencyCode, currentCurrencyValue))
             }, { err ->
                 Toast.makeText(context, err.message, Toast.LENGTH_LONG).show()
             })
@@ -87,107 +107,32 @@ class CurrencyPresenter(private val context: Context, private val api: RevolutAp
                 Pair(field.name, BigDecimal(field.getFloat(rates).toString()))
             }
             .toMutableList().apply { add(0, Pair("EUR", BigDecimal.ONE)) }
-            .map { (name, value) -> Rate(name, getDescription(name), value, getIcon(name)) }
+            .map { (name, value) ->
+                Rate(
+                    name, currencyProps.getDescription(name),
+                    value, currencyProps.getIcon(name))
+            }
     }
 
-    fun onStartEdition(currencyCode: String) {
+    fun onStartEdition(currencyCode: String, currencyValue: String) {
+        calledRated[currencyCode] = sortOrder++
         currentCurrencyCode = currencyCode
-        stopUpdating()
+        setCurrentCurrencyValue(currencyValue)
     }
 
     fun onNewValue(currencyCode: String, currencyValue: String) {
-        currentCurrencyValue = BigDecimal(currencyValue)
-        view?.updateRates(ratesToShow)
-    }
-
-    fun onStopEdition(currencyCode: String, currencyValue: String) {
-        startUpdating()
-    }
-
-    @SuppressLint("NewApi")
-    private fun getDescription(currencyCode: String): String {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            try {
-                Currency.getInstance(currencyCode).displayName
-            } catch (e: Exception) {
-                context.getString(R.string.unknown_currency)
-            }
-
-        } else {
-            val id = when (currencyCode) {
-                "AUD" -> R.string.long_aud
-                "EUR" -> R.string.long_eur
-                "USD" -> R.string.long_usd
-                "JPY" -> R.string.long_jpy
-                "BGN" -> R.string.long_bgn
-                "CZK" -> R.string.long_czk
-                "DKK" -> R.string.long_dkk
-                "GBP" -> R.string.long_gbp
-                "HUF" -> R.string.long_huf
-                "PLN" -> R.string.long_pln
-                "RON" -> R.string.long_ron
-                "SEK" -> R.string.long_sek
-                "CHF" -> R.string.long_chf
-                "NOK" -> R.string.long_nok
-                "HRK" -> R.string.long_hrk
-                "RUB" -> R.string.long_rub
-                "TRY" -> R.string.long_try
-                "BRL" -> R.string.long_brl
-                "CAD" -> R.string.long_cad
-                "CNY" -> R.string.long_cny
-                "HKD" -> R.string.long_hkd
-                "IDR" -> R.string.long_idr
-                "ILS" -> R.string.long_ils
-                "INR" -> R.string.long_inr
-                "KRW" -> R.string.long_krw
-                "MXN" -> R.string.long_mxn
-                "MYR" -> R.string.long_myr
-                "NZD" -> R.string.long_nzd
-                "PHP" -> R.string.long_php
-                "SGD" -> R.string.long_sgd
-                "THB" -> R.string.long_thb
-                "ZAR" -> R.string.long_zar
-                else -> R.string.unknown_currency
-            }
-            context.getString(id)
+        if (currencyCode == currentCurrencyCode) {
+            setCurrentCurrencyValue(currencyValue)
         }
     }
 
-    private fun getIcon(currencyCode: String): Int {
-        return when (currencyCode) {
-            "AUD" -> R.drawable.flag_aud
-            "EUR" -> R.drawable.flag_eur
-            "USD" -> R.drawable.flag_usd
-            "JPY" -> R.drawable.flag_jpy
-            "BGN" -> R.drawable.flag_bgn
-            "CZK" -> R.drawable.flag_czk
-            "DKK" -> R.drawable.flag_dkk
-            "GBP" -> R.drawable.flag_gbp
-            "HUF" -> R.drawable.flag_huf
-            "PLN" -> R.drawable.flag_pln
-            "RON" -> R.drawable.flag_ron
-            "SEK" -> R.drawable.flag_sek
-            "CHF" -> R.drawable.flag_chf
-            "NOK" -> R.drawable.flag_nok
-            "HRK" -> R.drawable.flag_hrk
-            "RUB" -> R.drawable.flag_rub
-            "TRY" -> R.drawable.flag_try
-            "BRL" -> R.drawable.flag_brl
-            "CAD" -> R.drawable.flag_cad
-            "CNY" -> R.drawable.flag_cny
-            "HKD" -> R.drawable.flag_hkd
-            "IDR" -> R.drawable.flag_idr
-            "ILS" -> R.drawable.flag_ils
-            "INR" -> R.drawable.flag_inr
-            "KRW" -> R.drawable.flag_kpw
-            "MXN" -> R.drawable.flag_mxn
-            "MYR" -> R.drawable.flag_myr
-            "NZD" -> R.drawable.flag_nzd
-            "PHP" -> R.drawable.flag_php
-            "SGD" -> R.drawable.flag_sgd
-            "THB" -> R.drawable.flag_thb
-            "ZAR" -> R.drawable.flag_zar
-            else -> R.drawable.ic_launcher_background
+    private fun setCurrentCurrencyValue(currencyValue: String) {
+        try {
+            currentCurrencyValue = BigDecimal(currencyValue)
+            view?.updateRates(
+                getRatesToShow(ratesFromServer, currentCurrencyCode, currentCurrencyValue))
+        } catch (e: NumberFormatException) {
+            view?.showError(context.getString(R.string.wrong_input_error, currencyValue))
         }
     }
 }

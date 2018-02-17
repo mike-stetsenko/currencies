@@ -6,11 +6,14 @@ import dagger.Provides
 import stetsenko.currencies.di.scope.PerApplication
 import stetsenko.currencies.model.RevolutApi
 import stetsenko.currencies.presenter.CurrencyPresenter
+import stetsenko.currencies.view.CurrencyPropertyProvider
 
 @Module
 class PresenterModule {
     @Provides
     @PerApplication
-    internal fun provideCurrencyPresenter(context: Context, api: RevolutApi): CurrencyPresenter =
-        CurrencyPresenter(context, api)
+    internal fun provideCurrencyPresenter(context: Context,
+                                          api: RevolutApi,
+                                          currencyProps: CurrencyPropertyProvider): CurrencyPresenter =
+        CurrencyPresenter(context, api, currencyProps)
 }

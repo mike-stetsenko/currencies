@@ -1,12 +1,9 @@
 package stetsenko.currencies.view
 
-import android.annotation.SuppressLint
-import android.content.Context
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
+import android.widget.Toast
 import stetsenko.currencies.R
 import stetsenko.currencies.presenter.CurrencyPresenter
 import stetsenko.currencies.presenter.Rate
@@ -20,47 +17,35 @@ class CurrenciesActivity : PresenterActivity<CurrencyPresenter, CurrenciesView>(
     @Inject
     override lateinit var presenter: CurrencyPresenter
 
-    private lateinit var rates: RecyclerView
+    private lateinit var ratesRecycler: RecyclerView
 
     private val ratesAdapter = RatesAdapter().also { it.setCallback(this) }
 
-    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         appComponent.inject(this)
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_currencies)
 
-        rates = findViewById(R.id.rates)
-        rates.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-        rates.adapter = ratesAdapter
-        // TODO close focus on random place click
+        ratesRecycler = findViewById(R.id.rates)
+        ratesRecycler.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        ratesRecycler.adapter = ratesAdapter
     }
 
     override fun updateRates(rates: List<Rate>) {
         ratesAdapter.update(rates)
     }
 
-    override fun onStartEdition(tag: String) {
-        presenter.onStartEdition(tag)
+    override fun onStartEdition(tag: String, value: String) {
+        ratesRecycler.scrollToPosition(0)
+        presenter.onStartEdition(tag, value)
     }
 
     override fun onNewValue(tag: String, value: String) {
         presenter.onNewValue(tag, value)
-        rates.smoothScrollToPosition(0)
     }
 
-    override fun onStopEditing(tag: String, value: String) {
-        presenter.onStopEdition(tag, value)
-    }
-
-    override fun onBackPressed() {
-        if (currentFocus is EditText) {
-            currentFocus.clearFocus() // TODO handle soft keyboard close properly
-            (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-                .hideSoftInputFromWindow(currentFocus.windowToken, 0)
-        } else {
-            super.onBackPressed()
-        }
+    override fun showError(text: String) {
+        Toast.makeText(this, text, Toast.LENGTH_LONG).show()
     }
 }
