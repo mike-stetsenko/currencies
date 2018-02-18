@@ -30,6 +30,7 @@ class CurrencyPresenter(private val context: Context,
     private val calledRated: HashMap<String, Long> = hashMapOf()
     private var sortOrder = 0L
 
+    // TODO move calledRated to arguments in order to make this function easy testable
     private fun getRatesToShow(serverRates: List<Rate>,
                                rateCode: String,
                                rateValue: BigDecimal): List<Rate> {
